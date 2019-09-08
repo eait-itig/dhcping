@@ -286,9 +286,19 @@ main(int argc, char *argv[])
 	return (0);
 }
 
-     struct ether_addr *
-     ether_aton(const char *s);
-
+static const uint8_t dhcping_requested[] = {
+	DHO_SUBNET_MASK,
+	DHO_BROADCAST_ADDRESS,
+	DHO_TIME_OFFSET,
+	DHO_CLASSLESS_STATIC_ROUTES,
+	DHO_ROUTERS,
+	DHO_DOMAIN_NAME,
+	DHO_DOMAIN_SEARCH,
+	DHO_DOMAIN_NAME_SERVERS,
+	DHO_HOST_NAME,
+	DHO_BOOTFILE_NAME,
+	DHO_TFTP_SERVER,
+};
 
 static void
 dhcping_packet_init(struct dhcping *dhcping, int s, const struct ether_addr *ea)
@@ -321,6 +331,11 @@ dhcping_packet_init(struct dhcping *dhcping, int s, const struct ether_addr *ea)
 	*dho++ = DHO_DHCP_MESSAGE_TYPE;
 	*dho++ = 1;
 	*dho++ = DHCPDISCOVER;
+
+	*dho++ = DHO_DHCP_PARAMETER_REQUEST_LIST;
+	*dho++ = sizeof(dhcping_requested);
+	memcpy(dho, dhcping_requested, sizeof(dhcping_requested));
+	dho += sizeof(dhcping_requested);
 
 	*dho++ = DHO_END;
 }
