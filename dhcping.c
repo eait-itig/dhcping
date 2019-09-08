@@ -44,7 +44,7 @@
 /* how long between packet sends */
 #define DHCP_IVAL_MIN		1
 #define DHCP_IVAL_MAX		10
-#define DHCP_IVAL_DEFAULT	1
+#define DHCP_IVAL_DEFAULT	2
 
 /* maximum wait time */
 #define DHCP_MAXWAIT_MIN	3
@@ -368,6 +368,9 @@ retry:
 
 		err(1, "transmit");
 	}
+
+	if (--dhcping->retries == 0)
+		return;
 
 	dhcping->secs += dhcping->interval.tv_sec;
 	evtimer_add(&dhcping->retry, &dhcping->interval);
