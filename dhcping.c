@@ -343,6 +343,8 @@ dhcping_packet_init(struct dhcping *dhcping, int s, const struct ether_addr *ea)
 static void
 dhcping_input(int s, short revents, void *arg)
 {
+	struct dhcping *dhcping = arg;
+	struct dhcp_packet *p = dhcping_packet(dhcping);
 	struct dhcp_packet reply;
 	ssize_t rv;
 
@@ -357,6 +359,32 @@ dhcping_input(int s, short revents, void *arg)
 		}
 		err(1, "input");
 	}
+
+	if ((size_t)rv < sizeof(reply)) {
+		if (dhcping->verbose)
+			warnx("ignoring short packet on input");
+		return;
+	}
+
+	if (reply.op != BOOTREPLY) {
+		if (dhcping->verbose)
+			warnx("ignoring non-BOOTREPLY packet");
+		return;
+	}
+
+	if (reply.giaddr.s_addr != p->giaddr.s_addr) {
+		if (dhcping->verbose)
+			warnx("ignoring packet with different giaddr");
+		return;
+	}
+
+	if (reply.xid != p->xid) {
+		if (dhcping->verbose)
+			warnx("ignoring packet with different xid");
+		return;
+	}
+
+	/* all good */
 
 	exit(0);
 }
