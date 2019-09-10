@@ -19,6 +19,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <pwd.h>
 #include <errno.h>
 #include <err.h>
 
@@ -205,6 +206,7 @@ main(int argc, char *argv[])
 	const char *server = NULL;
 	const char *user = DHCP_USER;
 	const char *errstr;
+	struct passwd *pw;
 	int ch;
 
 	while ((ch = getopt(argc, argv, "h:l:s:t:u:w:v")) != -1) {
@@ -264,8 +266,22 @@ main(int argc, char *argv[])
 	if (ea == NULL)
 		errx(1, "invalid mac %s", mac);
 
+	pw = getpwnam(user);
+	if (pw == NULL)
+		errx(1, "no %s user", DHCP_USER);
+
 	dhcping.s = dhcping_connect(self, server);
 	/* error printed by dhcping_connect */
+
+	if (chroot(pw->pw_dir) == -1)
+		err(1, "chroot %s", pw->pw_dir);
+	if (chdir("/") == -1)
+		err(1, "chdir %s", pw->pw_dir);
+
+	if (setgroups(1, &pw->pw_gid) ||
+	    setresgid(pw->pw_gid, pw->pw_gid, pw->pw_gid) ||
+	    setresuid(pw->pw_uid, pw->pw_uid, pw->pw_uid))
+		errx(1, "can't drop privileges");
 
 	dhcping_packet_init(&dhcping, dhcping.s, ea);
 
